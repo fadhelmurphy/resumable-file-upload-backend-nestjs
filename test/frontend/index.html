@@ -37,7 +37,7 @@
 </head>
 <body>
   <div class="container">
-    <h1>Resumable File Upload (JavaScript Native)</h1>
+    <h1>Resumable File Upload (Pake je es doang a)</h1>
     <input type="file" id="fileInput" />
     <progress id="progressBar" value="0" max="100"></progress>
     <button id="uploadBtn">Upload</button>
@@ -61,9 +61,8 @@
     let currentChunkIndex = 0;
     let isUploading = false;
 
-    // Event listener untuk memperbarui variabel file
     fileInput.addEventListener('change', (event) => {
-      file = event.target.files[0]; // Perbarui variabel file
+      file = event.target.files[0];
       if (file) {
         status.textContent = `Selected file: ${file.name}`;
         status.classList.remove('error');
