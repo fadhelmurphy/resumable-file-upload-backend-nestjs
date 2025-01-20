@@ -61,18 +61,6 @@
     let currentChunkIndex = 0;
     let isUploading = false;
 
-    // Event listener untuk memperbarui variabel file
-    fileInput.addEventListener('change', (event) => {
-      file = event.target.files[0]; // Perbarui variabel file
-      if (file) {
-        status.textContent = `Selected file: ${file.name}`;
-        status.classList.remove('error');
-      } else {
-        status.textContent = 'No file selected.';
-        status.classList.add('error');
-      }
-    });
-
     uploadBtn.addEventListener('click', async () => {
       if (!file) {
         alert('Please select a file.');
