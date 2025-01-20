@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chunk File Upload</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    input[type="file"] {
+      margin: 10px 0;
+    }
+    progress {
+      width: 100%;
+      height: 20px;
+    }
+    .status {
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Resumable File Upload</h1>
+        <input type="file" id="fileInput" />
+        <progress id="progressBar" value="0" max="100"></progress>
+        <button id="uploadBtn">Upload</button>
+        <div id="status">Select a file to upload.</div>
+      </div>
+
+  <script>
+    const CHUNK_SIZE = 1 * 1024 * 1024; // 1MB
+const API_URL = 'http://localhost:3000/upload/chunk';
+const MERGE_URL = 'http://localhost:3000/upload/merge';
+
+const fileInput = document.getElementById('fileInput');
+const uploadBtn = document.getElementById('uploadBtn');
+const progressBar = document.getElementById('progressBar');
+const status = document.getElementById('status');
+
+let fileKey = null;
+
+uploadBtn.addEventListener('click', async () => {
+  const file = fileInput.files[0];
+  if (!file) {
+    alert('Please select a file.');
+    return;
+  }
+
+  progressBar.value = 0;
+  status.textContent = 'Uploading...';
+
+  fileKey = `${file.size}-${file.lastModified}-${file.name}-chunk`; // Unique file identifier
+  const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+
+  // Fetch uploaded chunks from backend
+  let uploadedChunks = [];
+  try {
+    const response = await fetch(`${API_URL}/status?fileKey=${fileKey}`);
+    if (response.ok) {
+      const data = await response.json();
+      uploadedChunks = data.uploadedChunks || [];
+    }
+  } catch (error) {
+    console.error('Error checking upload status:', error);
+  }
+
+  for (let i = 0; i < totalChunks; i++) {
+    if (uploadedChunks.includes(i)) {
+      // Skip already uploaded chunks
+      continue;
+    }
+
+    const start = i * CHUNK_SIZE;
+    const end = Math.min(start + CHUNK_SIZE, file.size);
+    const chunk = file.slice(start, end);
+
+    const formData = new FormData();
+    formData.append('file', chunk);
+    formData.append('fileKey', fileKey);
+    formData.append('chunkIndex', i);
+
+    try {
+      await fetch(API_URL, {
+        method: 'POST',
+        body: formData,
+      });
+      progressBar.value = ((i + 1) / totalChunks) * 100;
+    } catch (error) {
+      console.error('Error uploading chunk:', error);
+      status.textContent = 'Error uploading file.';
+      return;
+    }
+  }
+
+  // Notify backend to merge chunks
+  try {
+    const mergeResponse = await fetch(MERGE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fileKey }),
+    });
+
+    if (mergeResponse.ok) {
+      status.textContent = 'Upload complete!';
+    } else {
+      status.textContent = 'Failed to merge file.';
+    }
+  } catch (error) {
+    console.error('Error merging file:', error);
+    status.textContent = 'Error merging file.';
+  }
+});
+
+  </script>
+</body>
+</html>
